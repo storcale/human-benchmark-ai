@@ -3,9 +3,12 @@ import numpy as np
 import pyautogui
 import keyboard
 
-TARGET_COLOR = [(106, 219, 75),(209, 135, 43)]
 
-def get_pixel_color_at_center():
+# Reaction time
+
+REACTION_TARGET_COLOR = [(106, 219, 75),(209, 135, 43)]
+
+def get_pixel_color():
     with mss.mss() as sct:
         # Capture the screen
         monitor = sct.monitors[1] 
@@ -29,23 +32,59 @@ def get_pixel_color_at_center():
 
         return tuple(pixel_color) 
 
-def check_and_click_if_color_matches():
-    pixel_color = get_pixel_color_at_center()
+def reaction_game():
+    pixel_color = get_pixel_color()
 
     # Check if the color matches
-    if pixel_color == TARGET_COLOR[0] or pixel_color == TARGET_COLOR[1]:
-        print(f"Color {pixel_color} matches target. Clicking!")
+    if pixel_color == REACTION_TARGET_COLOR[0] or pixel_color == REACTION_TARGET_COLOR[1]:
         # Click
         pyautogui.click(pyautogui.size()[0] // 2, pyautogui.size()[1] // 2)
-    else:
-        print(f"Color {pixel_color} does not match target.")
 
+# Aim trainer
+region = {
+    "top": 290,
+    "left": 70,
+    "width": 1800,
+    "height": 510
+}
+TARGET_COLOR = (149, 195, 232)  
+
+def aim_trainer():
+    with mss.mss() as sct:
+        screenshot = sct.grab(region)
+        img_np = np.array(screenshot)
+
+        for y in range(region["height"]):
+            for x in range(region["width"]):
+                pixel = img_np[y, x, :3]
+
+                # Compare pixel with color
+                if np.all(pixel == TARGET_COLOR):
+                    click_x = region["left"] + x
+                    click_y = region["top"] + y
+
+                    print(f"Target pixel found at ({click_x}, {click_y}), clicking!")
+                    pyautogui.click(click_x, click_y)
+                    continue
+
+        print("No target pixel found in the region.")
+
+# Main game loop
 def main():
     while True:
-        check_and_click_if_color_matches()
-        
+        game = input("Choose game (aim/reaction): ").strip().lower()
+
+        if game == "aim":
+            while not keyboard.is_pressed('esc'):
+                aim_trainer()
+        elif game == "reaction":
+            while not keyboard.is_pressed('esc'):
+                reaction_game()
+        else:
+            print("Invalid game choice, please choose 'aim' or 'reaction'.")
+
         if keyboard.is_pressed('esc'):
-            print("Escape key pressed. Exiting...")
+            print("Escape key pressed. Exiting the program...")
             break
 
     print("Script has stopped.")
